@@ -1,0 +1,40 @@
+     1                                  bits 32 
+     2                                  
+     3                                  
+     4                                  global start        
+     5                                  
+     6                                  
+     7                                  extern exit               
+     8                                  import exit msvcrt.dll    
+     9                                  segment data use32 class=data
+    10 00000000 15                          a db 21
+    11 00000001 11                          c db 17
+    12 00000002 0E                          d db 14
+    13 00000003 0001                        f dw 100h
+    14                                  
+    15                                  segment code use32 class=code
+    16                                      start:
+    17 00000000 B800000000                      mov eax,0   
+    18                                          ;calculam c-2
+    19 00000005 A0[01000000]                    mov al,[c]  
+    20 0000000A 2C02                            sub al,2    
+    21 0000000C 88C2                            mov dl,al   
+    22                                          ;calculam 3+a
+    23 0000000E B003                            mov al,3    
+    24 00000010 0205[00000000]                  add al,[a]  
+    25                                          ;calculam (c-2)*(3+a)
+    26 00000016 F6E2                            mul dl      
+    27 00000018 6689C2                          mov dx,ax   
+    28                                          ;calculam d-4
+    29 0000001B A0[02000000]                    mov al,[d]  
+    30 00000020 2C04                            sub al,4    
+    31 00000022 88C3                            mov bl,al   
+    32                                          ;calculam (c-2)*(3+a)/(d-4)
+    33 00000024 6689D0                          mov ax,dx   
+    34 00000027 F6F3                            div bl      
+    35                                          ;calculam f+(c-2)*(3+a)/(d-4)
+    36 00000029 B400                            mov ah,0
+    37 0000002B 660305[03000000]                add ax,[f]  
+    38                                          ; exit(0)
+    39 00000032 6A00                            push    dword 0      ; push the parameter for exit onto the stack
+    40 00000034 FF15[00000000]                  call    [exit]       ; call exit to terminate the program

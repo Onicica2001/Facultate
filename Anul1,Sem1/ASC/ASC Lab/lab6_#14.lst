@@ -1,0 +1,54 @@
+     1                                  bits 32 
+     2                                  
+     3                                  
+     4                                  global start        
+     5                                  
+     6                                  
+     7                                  extern exit               
+     8                                  import exit msvcrt.dll    
+     9                                  ; 14.Se da un sir S de dublucuvinte.
+    10                                  ;Sa se obtina sirul D format din octetii dublucuvintelor din sirul D sortati in ordine crescatoare in interpretarea fara semn.
+    11                                  ;  Exemplu:
+    12                                  ;s DD 12345607h, 1A2B3C15h
+    13                                  ;d DB 07h, 12h, 15h, 1Ah, 2Bh, 34h, 3Ch, 56h
+    14                                  
+    15                                  segment data use32 class=data
+    16 00000000 07563412153C2B1A            s dd 12345607h, 1A2B3C15h
+    17                                      len_s equ $-s
+    18 00000008 FF<rept>                    d times len_s db -1
+    19                                  
+    20                                  
+    21                                  segment code use32 class=code
+    22                                      start:
+    23 00000000 BE[00000000]                    mov esi, s                      ;ESI=s
+    24 00000005 BF[08000000]                    mov edi, d                      ;EDI=d
+    25 0000000A FC                              cld                             ;DF=0
+    26 0000000B B908000000                      mov ecx, len_s                  ;ECX=len_s=8
+    27 00000010 E333                            jecxz final                     ;Daca ECX=0 sare la final
+    28                                          repeta:
+    29 00000012 A4                                  movsb                       ;In EDI se incarca un octet din ESI + EDI=EDI+1 + ESI=ESI+1
+    30 00000013 E2FD                                loop repeta
+    31 00000015 66BA0100                        mov dx,1                        ;DX=1 ca valoare de adevar
+    32                                          while_loop:
+    33 00000019 6683FA00                            cmp dx,0                    ;Verifica daca DX este 0
+    34 0000001D 7426                                je while_final              ;Daca DX este 0 inseamna ca este fals si sarim la finalul while-ului
+    35 0000001F BE[08000000]                        mov esi,d                   ;ESI=d
+    36 00000024 66BA0000                            mov dx,0                    ;DX=0
+    37 00000028 B907000000                          mov ecx,len_s-1             ;ECX=len_s=8
+    38                                              for_loop:
+    39 0000002D 8A06                                    mov al, [esi]           ;AL=d[i]
+    40 0000002F 3A4601                                  cmp al, [esi+1]         ;if(d[i+1]<d[i])
+    41 00000032 760C                                    jbe mai_departe         ;daca d[i+1]>d[i] sare la instructiunea mai_departe
+    42 00000034 8A6601                                      mov ah, [esi+1]     ;AH=d[i+1]
+    43 00000037 8826                                        mov [esi], ah       ;d[i]=AH
+    44 00000039 884601                                      mov [esi+1], al     ;d[i+1]=AL
+    45 0000003C 66BA0100                                    mov dx, 1           ;DX=1
+    46                                                  mai_departe:
+    47 00000040 46                                      inc esi                 ; i++
+    48 00000041 E2EA                                    loop for_loop
+    49 00000043 EBD4                                    jmp while_loop
+    50                                          while_final:
+    51                                          final:
+    52                                          ; exit(0)
+    53 00000045 6A00                            push    dword 0      ; push the parameter for exit onto the stack
+    54 00000047 FF15[00000000]                  call    [exit]       ; call exit to terminate the program

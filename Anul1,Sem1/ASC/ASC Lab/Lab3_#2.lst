@@ -1,0 +1,48 @@
+     1                                  bits 32 
+     2                                  
+     3                                  
+     4                                  global start        
+     5                                  
+     6                                  
+     7                                  extern exit              
+     8                                  import exit msvcrt.dll    
+     9                                  
+    10                                  ; a - byte, b - word, c - double word, d - qword - Interpretare cu semn
+    11                                  segment data use32 class=data
+    12 00000000 7F                          a db 127
+    13 00000001 D007                        b dw 2000
+    14 00000003 A2FEFFFF                    c dd -350
+    15 00000007 E803000000000000            d dq 1000
+    16                                  
+    17                                  ; (b+b)-c-(a+d)
+    18                                  segment code use32 class=code
+    19                                      start:
+    20                                          ;calculam a+d
+    21 00000000 A0[00000000]                    mov al,[a]          ;AL=a=7Fh=127d
+    22 00000005 6698                            cbw                 ;AL->AX
+    23 00000007 98                              cwde                ;AX->EAX
+    24 00000008 99                              cdq                 ;EAX->EDX:EAX       EAX=7Fh=127d
+    25 00000009 8B1D[07000000]                  mov ebx,dword[d]    ;EBX=3E8h=1000d
+    26 0000000F 8B0D[0B000000]                  mov ecx,dword[d+4]  ;ECX=0
+    27 00000015 01D8                            add eax,ebx         ;EAX=EAX+EBX=7Fh+3E8h=467h=1127d        CF=0
+    28 00000017 11CA                            adc edx,ecx         ;EDX=EDX+ECX+CF=0+0+0=0
+    29 00000019 89C3                            mov ebx,eax         ;EBX=EAX=467h=1127d
+    30 0000001B 89D1                            mov ecx,edx         ;ECX=EDX=0
+    31                                          
+    32                                          ;calculam b+b
+    33 0000001D 66A1[01000000]                  mov ax,[b]          ;AX=b=7D0h=2000d
+    34 00000023 6601C0                          add ax,ax           ;AX=AX+AX=FA0h=4000d
+    35                                          
+    36                                          ;calculam (b+b)-c
+    37 00000026 98                              cwde                ;AX->EAX
+    38 00000027 8B15[03000000]                  mov edx,[c]         ;EDX=c=FFFF FFFF FFFF FEA2h=-350d
+    39 0000002D 29D0                            sub eax,edx         ;EAX=EAX-EDX=FA0h-FFFF FFFF FFFF FEA2h=10FEh=4350d
+    40                                          
+    41                                          ;calculam (b+b)-c-(a+d)
+    42 0000002F 99                              cdq                 ;EAX->EDX:EAX
+    43 00000030 29D8                            sub eax,ebx         ;EAX=EAX-EBX=10FEh-467h=C97h=3223d      CF=0
+    44 00000032 19CA                            sbb edx,ecx         ;EDX=EDX-ECX-CF=0-0-0=0
+    45                                      
+    46                                          ; exit(0)
+    47 00000034 6A00                            push    dword 0      ; push the parameter for exit onto the stack
+    48 00000036 FF15[00000000]                  call    [exit]       ; call exit to terminate the program

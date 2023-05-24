@@ -1,0 +1,51 @@
+     1                                  bits 32 
+     2                                  
+     3                                  
+     4                                  global start        
+     5                                  
+     6                                  
+     7                                  extern exit               
+     8                                  import exit msvcrt.dll    
+     9                                  
+    10                                  ;Se da quadwordul A. Sa se obtina numarul intreg N reprezentat de bitii 35-37 ai lui A. Sa se obtina apoi in B dublucuvantul rezultat prin rotirea spre dreapta a dublucuvantului inferior al lui A cu N pozitii. Sa se
+    11                                  ;bitii 0-3 ai lui C sunt bitii 8-11 ai lui B
+    12                                  ;bitii 4-7 ai lui C sunt bitii 16-19 ai lui B
+    13                                  segment data use32 class=data
+    14 00000000 BE9B5777BE9B5777            a dq 0111011101010111100110111011111001110111010101111001101110111110b
+    15 00000008 00000000                    b dd 0
+    16 0000000C 00                          c db 0
+    17 0000000D 00                          n db 0
+    18                                  
+    19                                  
+    20                                  segment code use32 class=code
+    21                                      start:
+    22                                          ;Sa se obtina numarul intreg N reprezentat de bitii 35-37 ai lui A
+    23 00000000 A0[04000000]                    mov al,byte [a+4]   ;AL=10111110b
+    24 00000005 2438                            and al,00111000b    ;izolam bitii 35-37 ai lui A
+    25 00000007 C0C803                          ror al,3            ;AL=00000111b
+    26 0000000A A2[0D000000]                    mov [n],al          ;N=00000111b
+    27                                          
+    28                                          ;Sa se obtina apoi in B dublucuvantul rezultat prin rotirea spre dreapta a dublucuvantului inferior al lui A cu N pozitii
+    29 0000000F A1[00000000]                    mov eax,dword [a]   ;EAX=01110111010101111001101110111110b
+    30 00000014 8A0D[0D000000]                  mov cl,[n]          ;CL=N=00000111b
+    31 0000001A D3C8                            ror eax,cl          ;EAX se roteste spre dreapta cu N pozitii
+    32 0000001C A3[08000000]                    mov [b],eax         ;B=11011101010111100110111011111001b
+    33                                          
+    34                                          ;Sa se obtina octetul C astfel:
+    35                                          ;bitii 0-3 ai lui C sunt bitii 8-11 ai lui B
+    36 00000021 A0[09000000]                    mov al,byte [b+1]   ;AL=01101110b
+    37 00000026 240F                            and al,00001111b    ;izolam bitii 8-11 ai lui B
+    38 00000028 88C3                            mov bl,al           ;BL=00001110b
+    39                                          
+    40                                          ;bitii 4-7 ai lui C sunt bitii 16-19 ai lui B
+    41 0000002A A0[0A000000]                    mov al,byte [b+2]   ;AL=01011110b
+    42 0000002F 240F                            and al,00001111b    ;izolam bitii 16-19 ai lui B
+    43 00000031 C0C004                          rol al,4            ;AL se roteste spre stanga cu 4 pozitii
+    44 00000034 08C3                            or bl,al            ;punem bitii in rezultat
+    45 00000036 881D[0C000000]                  mov [c],bl          ;C=11101110b
+    46                                          
+    47                                          
+    48                                      
+    49                                          
+    50 0000003C 6A00                            push    dword 0      ; push the parameter for exit onto the stack
+    51 0000003E FF15[00000000]                  call    [exit]       ; call exit to terminate the program

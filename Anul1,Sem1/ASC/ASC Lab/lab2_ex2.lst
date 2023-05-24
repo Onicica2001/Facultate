@@ -1,0 +1,35 @@
+     1                                  bits 32 
+     2                                  
+     3                                  
+     4                                  global start        
+     5                                  
+     6                                  
+     7                                  extern exit              
+     8                                  import exit msvcrt.dll   
+     9                                                            
+    10                                  
+    11                                  segment data use32 class=data
+    12 00000000 32                          d db 50
+    13 00000001 0C                          a db 12
+    14 00000002 10                          b db 16
+    15 00000003 14                          c db 20
+    16                                  segment code use32 class=code
+    17                                      start:
+    18 00000000 B800000000                      mov eax,0
+    19                                          
+    20                                          ;calculam (a+b)
+    21 00000005 A0[01000000]                    mov al,[a]
+    22 0000000A 0205[02000000]                  add al,[b]
+    23                                          
+    24                                          ;calculam d-(a+b)
+    25 00000010 88C2                            mov dl,al
+    26 00000012 A0[00000000]                    mov al,[d]
+    27 00000017 28D0                            sub al,dl
+    28                                          
+    29                                          ;calculam d-(a+b)+c
+    30 00000019 0205[03000000]                  add al,[c]
+    31                                          
+    32                                      
+    33                                          ; exit(0)
+    34 0000001F 6A00                            push    dword 0      ; push the parameter for exit onto the stack
+    35 00000021 FF15[00000000]                  call    [exit]       ; call exit to terminate the program

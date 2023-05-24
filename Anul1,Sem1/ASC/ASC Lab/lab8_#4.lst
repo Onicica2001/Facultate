@@ -1,0 +1,87 @@
+     1                                  bits 32 
+     2                                  
+     3                                  
+     4                                  global start        
+     5                                  
+     6                                  
+     7                                  extern exit,fopen,fclose,printf,fread               
+     8                                  import exit msvcrt.dll
+     9                                  import fopen msvcrt.dll
+    10                                  import fclose msvcrt.dll
+    11                                  import printf msvcrt.dll
+    12                                  import fread msvcrt.dll    
+    13                                  
+    14                                  ;Se da un fisier text. Sa se citeasca continutul fisierului, sa se contorizeze numarul de cifre impare si sa se afiseze aceasta valoare. Numele fisierului text este definit in segmentul de date.
+    15                                  segment data use32 class=data
+    16 00000000 54656D612E74787400          nume_fisier db "Tema.txt",0
+    17 00000009 7200                        mod_acces db "r",0
+    18 0000000B FFFFFFFF                    descriptor_fisier dd -1
+    19 0000000F 00000000                    nr_car_citite dd 0
+    20                                      len equ 100
+    21 00000013 <res 00000064>              buffer resb len
+    22 00000077 00000000                    contor dd 0
+    23 0000007B 496E20666973696572-         format db "In fisier exista %d cifre impare",0
+    23 00000084 206578697374612025-
+    23 0000008D 642063696672652069-
+    23 00000096 6D7061726500       
+    24                                  
+    25                                  segment code use32 class=code
+    26                                      start:
+    27                                          ;Deschidem fisierul
+    28                                          
+    29 00000000 68[09000000]                    push dword mod_acces        ;Punem adresa stringului 'mod_acces' pe stiva
+    30 00000005 68[00000000]                    push dword nume_fisier      ;Punem adresa stringului 'nume_fisier' pe stiva
+    31 0000000A FF15[00000000]                  call[fopen]                 ;Deschidem fisierul cu numele 'nume_fisier' in modul 'mod_acces'
+    32 00000010 83C408                          add esp,4*2                 ;Eliberam parametrii de pe stiva
+    33                                          
+    34                                          ;Verificam daca fisierul s-a deschis corect
+    35                                          
+    36 00000013 83F800                          cmp eax,0                   ;In EAX se salveaza descriptorul fisierului.Compara EAX cu 0
+    37 00000016 7472                            je final                    ;Daca EAX este 0 inseamna ca fisierul nu s-a deschis corect, iar programul se termina
+    38                                          
+    39 00000018 A3[0B000000]                    mov [descriptor_fisier],eax ;Salvam descriptorul fisierului in 'descriptor_fisier'
+    40                                          
+    41                                          repeta:
+    42 0000001D FF35[0B000000]                      push dword [descriptor_fisier]  ;Punem valoarea lui 'descriptor_fisier' pe stiva
+    43 00000023 6A64                                push dword len                  ;Punem numarul de elemente care pot fi citite intr-o etapa pe stiva
+    44 00000025 6A01                                push dword 1                    ;Punem dimensiunea unui elemente care poate fi citit pe stiva   
+    45 00000027 68[13000000]                        push dword buffer               ;Punem adresa unui sir de elemente in care se vor completa datele citite din fisier
+    46 0000002C FF15[00000000]                      call[fread]                     ;Apelam functia fread
+    47 00000032 83C410                              add esp,4*4                     ;Eliberam parametrii de pe stiva
+    48                                              
+    49 00000035 83F800                              cmp eax,0                       ;Comparam numarul de elemente citite salvat in EAX cu 0
+    50 00000038 742D                                je cleanup                      ;Daca nu au mai fost citite elemente sarim la cleanup
+    51                                              
+    52 0000003A A3[0F000000]                        mov [nr_car_citite],eax         ;Salvam numarul de elemente citite intr-o variabila
+    53                                              
+    54                                              ;Contorizarea numarului de cifre impare 
+    55                                              
+    56 0000003F 8B0D[0F000000]                      mov ecx,[nr_car_citite]         ;In ECX salvam numarul de elemente citite
+    57 00000045 BE[13000000]                        mov esi,buffer                  ;In ESI salvam offsetul sirului de elemente in care s-au completat datele citite din fisier
+    58                                              numara:
+    59 0000004A AC                                      lodsb                       ;Incarcam in AL byte-ul de la adresa <DS:ESI>
+    60 0000004B 3C39                                    cmp al,'9'                  ;Comparam AL cu caracterul 9
+    61 0000004D 7713                                    ja nu_numar                 ;Daca este mai mare sarim la nu_numar
+    62 0000004F 3C30                                    cmp al,'0'                  ;Comparam AL cu caracterul 0
+    63 00000051 720F                                    jb nu_numar                 ;Daca este mai mic sarim la nu_numar
+    64 00000053 A801                                    test al,1                   ;Aplicam operatia AND imaginara intre AL si 1
+    65 00000055 740B                                    jz nu_numar                 ;Daca numarul este par atunci ultima cifra va fi 0, iar ZF va fi setat pe 1. Daca ZF este 1 sarim la nu_numar
+    66 00000057 8305[77000000]01                        add dword [contor],1        ;Crestem contorul
+    67 0000005E E2EA                                    loop numara         
+    68                                              
+    69 00000060 EBBB                                jmp repeta
+    70                                          nu_numar:
+    71 00000062 49                                  dec ecx                         ;Decrementam ECX
+    72 00000063 E3B8                                jecxz repeta                    ;Daca ECX este 0 sarim la repeta
+    73 00000065 EBE3                                jmp numara
+    74                                          cleanup:
+    75 00000067 FF35[0B000000]                      push dword [descriptor_fisier]  ;Punem valoarea lui 'descriptor_fisier' pe stiva
+    76 0000006D FF15[00000000]                      call[fclose]                    ;Apelam functia fclose
+    77 00000073 83C404                              add esp,4                       ;Eliberam parametrii de pe stiva
+    78 00000076 FF35[77000000]                  push dword [contor]                 ;Punem valoarea contorului 'contor' pe stiva
+    79 0000007C 68[7B000000]                    push dword format                   ;Punem adresa stringului 'format' pe stiva
+    80 00000081 FF15[00000000]                  call[printf]                        ;Apelam functia printf
+    81 00000087 83C408                          add esp,4*2                         ;Eliberam parametrii de pe stiva
+    82                                          final:
+    83 0000008A 6A00                            push    dword 0      ; push the parameter for exit onto the stack
+    84 0000008C FF15[00000000]                  call    [exit]       ; call exit to terminate the program

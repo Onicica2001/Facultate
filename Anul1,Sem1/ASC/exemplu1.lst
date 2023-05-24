@@ -1,0 +1,132 @@
+     1                                  bits 32 
+     2                                  global start        
+     3                                  extern exit, printf             
+     4                                  import exit msvcrt.dll 
+     5                                  import printf msvcrt.dll   
+     6                                  segment data use32 class=data
+     7 00000000 414E412C4152452C4D-         s1  db 'ANA,ARE,MERE,EU,NU,MAI,AM'
+     7 00000009 4552452C45552C4E55-
+     7 00000012 2C4D41492C414D     
+     8                                      len equ $-s1
+     9 00000019 5E5E2D2C5E2D5E2C5E-         s2 db '^^-,^-^,^-^^,--,^^,-^^,--'
+     9 00000022 2D5E5E2C2D2D2C5E5E-
+     9 0000002B 2C2D5E5E2C2D2D     
+    10 00000032 <res 0000001A>              s3 resb len+1
+    11 0000004C 257300                      format db "%s",0
+    12                                  segment code use32 class=code
+    13                                      start:
+    14 00000000 F9                              stc
+    15 00000001 9C                              pushf
+    16 00000002 58                              pop eax
+    17 00000003 BB00000000                      mov ebx,0
+    18 00000008 B909000000                      mov ecx,9
+    19                                          bucla:
+    20 0000000D D1E8                                shr eax,1
+    21 0000000F D1D3                                rcl ebx,1
+    22 00000011 83F906                              cmp ecx,6
+    23 00000014 7E03                                jle set
+    24 00000016 F8                                  clc
+    25 00000017 EB01                                jmp continuare
+    26                                              set:
+    27 00000019 F9                                      stc
+    28                                              continuare:
+    29 0000001A 7202                                jc urmator
+    30 0000001C D1E8                                shr eax,1
+    31                                              urmator:
+    32 0000001E E2ED                            loop bucla
+    33                                          ; mov ecx,len
+    34                                          ; mov esi,0
+    35                                          ; cld
+    36                                          ; lo: 
+    37                                              ; mov eax,0
+    38                                              ; mov ebx,0
+    39                                              ; mov al,[s1+esi]
+    40                                              ; mov bl,[s2+esi]
+    41                                              ; cmp al,','
+    42                                              ; je nexxt
+    43                                              ; cmp bl,','
+    44                                              ; je nexxt
+    45                                              ; push dword esi
+    46                                              ; push dword ecx
+    47                                              
+    48                                              ; push dword eax
+    49                                              ; push dword ebx
+    50                                              ; push dword esi
+    51                                              ; call change
+    52                                              ; add esp,4*3
+    53                                              
+    54                                              ; pop dword ecx
+    55                                              ; pop dword esi
+    56                                              ; mov [s3+esi],al
+    57                                              ; jmp ye
+    58                                              
+    59                                              ; nexxt:
+    60                                              ; mov byte [s3+esi],','
+    61                                              
+    62                                              ; ye:
+    63                                              ; inc esi
+    64                                              ; loop lo
+    65                                          
+    66                                          
+    67                                          ; push dword s3
+    68                                          ; push dword format
+    69                                          ; call [printf]
+    70                                          ; add esp,4*2
+    71                                  
+    72                                          ; jmp final
+    73                                      
+    74                                         ; change:
+    75                                          ; mov eax,[esp+12]
+    76                                          ; mov ebx,[esp+8]
+    77                                          ; mov ecx,[esp+4]
+    78                                          ; cmp ebx,'-'
+    79                                          ; je scadere
+    80                                          ; mov esi,0
+    81                                          ; sauexclusiv:
+    82                                              ; mov ebx,0
+    83                                              ; shr eax,1
+    84                                              ; rcl ebx,1
+    85                                              
+    86                                              ; mov edx,0
+    87                                              ; shr ecx,1
+    88                                              ; rcl edx,1
+    89                                              
+    90                                              ; cmp ebx,edx
+    91                                              ; jne next
+    92                                              ; zero:
+    93                                                 ; push dword 0
+    94                                                 ; inc esi
+    95                                                 ; jmp iarnext
+    96                                          
+    97                                              ; next: 
+    98                                              ; inc esi
+    99                                              ; push dword 1
+   100                                              ; jmp iarnext
+   101                                              
+   102                                              ; iarnext:
+   103                                              ; cmp eax,0
+   104                                              ; jnz sauexclusiv
+   105                                              
+   106                                              ; mov ecx,esi
+   107                                              ; mov eax,0
+   108                                              ; aflamnr:
+   109                                                  ; pop ebx
+   110                                                  ; shr ebx,1
+   111                                                  ; rcl eax,1
+   112                                                  ; loop aflamnr
+   113                                              ; ret
+   114                                  
+   115                                          ; jmp final
+   116                                          ; scadere:
+   117                                              ; cmp eax,'A'
+   118                                              ; jne loop1
+   119                                              ; mov eax,'Z'
+   120                                              ; loop scadere
+   121                                              ; loop1:
+   122                                              ; sub eax,1
+   123                                              ; loop scadere
+   124                                           ; ret
+   125                                       ; final:
+   126                                          ; ; exit(0)
+   127                                          ; push    dword 0      ; push the parameter for exit onto the stack
+   128                                          ; call    [exit]       ; call exit to terminate the program

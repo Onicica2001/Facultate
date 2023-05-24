@@ -1,0 +1,27 @@
+     1                                  bits 32 ; assembling for the 32 bits architecture
+     2                                  
+     3                                  ; declare the EntryPoint (a label defining the very first instruction of the program)
+     4                                  global start        
+     5                                  
+     6                                  ; declare external functions needed by our program
+     7                                  extern exit               ; tell nasm that exit exists even if we won't be defining it
+     8                                  import exit msvcrt.dll    ; exit is a function that ends the calling process. It is defined in msvcrt.dll
+     9                                                            ; msvcrt.dll contains exit, printf and all the other important C-runtime specific functions
+    10                                  
+    11                                  ; our data is declared here (the variables needed by our program)
+    12                                  segment data use32 class=data
+    13 00000000 3A                          a db 0x3A
+    14 00000001 FF00AB0000000000        b dq 0xAB00FF
+    15 00000009 12                      x db 0x12
+    16 0000000A 09                      c db $-b
+    17                                  
+    18                                  ; our code starts here
+    19                                  segment code use32 class=code
+    20                                      start:
+    21 00000000 66B8FFFF                        mov ax,-1
+    22 00000004 66BA0000                mov dx,0
+    23 00000008 66BB0100                mov bx,1
+    24 0000000C 66F7F3                  div bx
+    25                                          ; exit(0)
+    26 0000000F 6A00                            push    dword 0      ; push the parameter for exit onto the stack
+    27 00000011 FF15[00000000]                  call    [exit]       ; call exit to terminate the program

@@ -1,0 +1,10 @@
+Digi24,stiri,2,buletin de stiri
+HBO,filme,7,filme de groaza
+RealitateaPlus,stiri,3,stirile zilei
+KanalD,filme,8,seriale turcesti
+Happy,filme,18,seriale turcesti si indiene
+AXN,filme,24,filme politiste si de groaza
+Disney Channel,entertainment,16,desene animate si filme pentru copii
+Cartoon Network,entertainment,20,desene animate
+History,istorie,14,emisiuni despre istorie
+TVR1,stiri,6,stirile televiziunii romane

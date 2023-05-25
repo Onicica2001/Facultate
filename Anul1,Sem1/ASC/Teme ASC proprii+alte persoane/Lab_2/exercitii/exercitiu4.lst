@@ -1,0 +1,59 @@
+     1                                  ; Scrieți un program în limbaj de asamblare care să rezolve expresia aritmetică, considerând domeniile de definiție ale variabilelor
+     2                                  ;a,b,c - byte, d - word
+     3                                  ;d+10*a-b*c
+     4                                  bits 32 ; assembling for the 32 bits architecture
+     5                                  
+     6                                  ; declare the EntryPoint (a label defining the very first instruction of the program)
+     7                                  global start        
+     8                                  
+     9                                  ; declare external functions needed by our program
+    10                                  extern exit               ; tell nasm that exit exists even if we won't be defining it
+    11                                  import exit msvcrt.dll    ; exit is a function that ends the calling process. It is defined in msvcrt.dll
+    12                                                            ; msvcrt.dll contains exit, printf and all the other important C-runtime specific functions
+    13                                  
+    14                                  ; our data is declared here (the variables needed by our program)
+    15                                  segment data use32 class=data
+    16                                      ;
+    17 00000000 02                            a db 2
+    18 00000001 05                            b db 5
+    19 00000002 03                            c db 3
+    20 00000003 0600                          d dw 6
+    21                                  
+    22                                  ; our code starts here
+    23                                  segment code use32 class=code
+    24                                      start:
+    25                                          ;
+    26                                          ;d
+    27 00000000 66A1[03000000]                  mov ax,[d] ; AX=d
+    28                                          
+    29 00000006 6652                            push DX    ; DX:AH
+    30 00000008 6650                            push AX    ; DX:AX
+    31 0000000A 5B                              pop EBX    ; EBX=DX:AX=d
+    32                                          
+    33                                          ;d+10*a
+    34 0000000B 66B80A00                        mov AX,10  ; AX=10
+    35 0000000F 668B15[00000000]                mov DX,[a] ; DX=a
+    36 00000016 66F7E2                          mul DX     ; DX=DX:AX=10*a
+    37                                          
+    38 00000019 6652                            push DX    ;DX:AX
+    39 0000001B 6650                            push AX    ;DX=AX
+    40 0000001D 58                              pop EAX    ;EAX=DX:AX=10*a
+    41                                          
+    42 0000001E 01C3                            add EBX,EAX;EBX=EBX+EAX=d+10*a
+    43                                          
+    44                                          ;d+10*a-b*c
+    45                                          
+    46 00000020 66A1[01000000]                  mov AX,[b] ;AX=b        
+    47 00000026 668B15[02000000]                mov DX,[c] ;DX=c
+    48 0000002D 66F7E2                          mul DX     ;DX=DX:AX=b*c
+    49                                          
+    50 00000030 6652                            push DX    ;DX:AX
+    51 00000032 6650                            push AX    ;DX:AX
+    52 00000034 58                              pop EAX    ;EAX=b*c
+    53                                          
+    54 00000035 29C3                            sub EBX,EAX;EBX=EBX-EAX=d+10*a-b*c
+    55                                          
+    56                                      
+    57                                          ; exit(0)
+    58 00000037 6A00                            push    dword 0      ; push the parameter for exit onto the stack
+    59 00000039 FF15[00000000]                  call    [exit]       ; call exit to terminate the program

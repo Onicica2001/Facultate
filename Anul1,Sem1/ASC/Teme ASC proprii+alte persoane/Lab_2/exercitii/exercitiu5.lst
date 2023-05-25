@@ -1,0 +1,54 @@
+     1                                  ;Scrieți un program în limbaj de asamblare care să rezolve expresia aritmetică, considerând domeniile de definiție ale variabilelor
+     2                                  ;a,b,c,d-byte
+     3                                  ; e,f,g,h-word
+     4                                  ;(e+g-h)/3+b*c
+     5                                  bits 32 ; assembling for the 32 bits architecture
+     6                                  
+     7                                  
+     8                                  ; declare the EntryPoint (a label defining the very first instruction of the program)
+     9                                  global start        
+    10                                  
+    11                                  ; declare external functions needed by our program
+    12                                  extern exit               ; tell nasm that exit exists even if we won't be defining it
+    13                                  import exit msvcrt.dll    ; exit is a function that ends the calling process. It is defined in msvcrt.dll
+    14                                                            ; msvcrt.dll contains exit, printf and all the other important C-runtime specific functions
+    15                                  
+    16                                  ; our data is declared here (the variables needed by our program)
+    17                                  segment data use32 class=data
+    18                                       ;
+    19 00000000 02                           b db 2
+    20 00000001 03                           c db 3
+    21 00000002 0400                         e dw 4
+    22 00000004 0800                         g dw 8
+    23 00000006 0600                         h dw 6
+    24                                  
+    25                                  ; our code starts here
+    26                                  segment code use32 class=code
+    27                                      start:
+    28                                          ;(e+g-h)/3
+    29 00000000 66A1[02000000]                  mov AX,[e]; AX=e
+    30 00000006 660305[04000000]                add AX,[g]; AX=AX+g=AX=e+g
+    31 0000000D 662B05[06000000]                sub AX,[h]; AX=AX-h=e+g-h
+    32 00000014 B303                            mov BL,3  ; BL=3
+    33 00000016 F6F3                            div BL    ; AX=AX/BL=(e+g-h)/3
+    34                                          
+    35 00000018 6652                            push DX   ; DX:AX
+    36 0000001A 6650                            push AX   ; DX:AX
+    37 0000001C 5B                              pop EBX   ; EBX=AX=(e+g-h)/3
+    38                                          
+    39                                          ;b*c
+    40 0000001D 668B15[01000000]                mov DX,[c]; DX=c
+    41 00000024 66A1[00000000]                  mov AX,[b]; AX=b
+    42 0000002A 66F7E2                          mul DX    ; DX=DX*AX
+    43                                          
+    44 0000002D 6652                            push DX    ;DX:AX
+    45 0000002F 6650                            push AX    ;DX:AX
+    46 00000031 58                              pop EAX    ;EAX=b*c
+    47                                          
+    48                                          ;(e+g-h)/3+b*c
+    49 00000032 01C3                            add EBX,EAX; EBX=EBX+EAX
+    50                                          
+    51                                         
+    52                                          ; exit(0)
+    53 00000034 6A00                            push    dword 0      ; push the parameter for exit onto the stack
+    54 00000036 FF15[00000000]                  call    [exit]       ; call exit to terminate the program

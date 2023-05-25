@@ -1,0 +1,44 @@
+     1                                  bits 32 
+     2                                  
+     3                                  
+     4                                  global start        
+     5                                  
+     6                                  
+     7                                  extern exit               
+     8                                  import exit msvcrt.dll    
+     9                                  
+    10                                  segment data use32 class=data
+    11 00000000 0A                          a db 10
+    12 00000001 32                          b db 50
+    13 00000002 46                          c db 70
+    14 00000003 9600                        d dw 96h
+    15                                  
+    16                                  
+    17                                  segment code use32 class=code
+    18                                      start:
+    19 00000000 B800000000                      mov eax,0
+    20                                          ;calculam c+b
+    21 00000005 A0[02000000]                    mov al,[c]
+    22 0000000A 0205[01000000]                  add al,[b]
+    23 00000010 88C2                            mov dl,al
+    24                                          ;calculam d/a
+    25 00000012 66A1[03000000]                  mov ax,[d]
+    26 00000018 8A1D[00000000]                  mov bl,[a]
+    27 0000001E F6F3                            div bl
+    28 00000020 88C3                            mov bl,al
+    29                                          ;calculam(c+b-d/a)
+    30 00000022 88D0                            mov al,dl
+    31 00000024 28D8                            sub al,bl
+    32 00000026 88C2                            mov dl,al
+    33                                          ;calculam 3*(c+b-d/a)
+    34 00000028 B003                            mov al,3
+    35 0000002A F6E2                            mul dl
+    36                                          ;calculam [3*(c+b-d/a)-300]
+    37 0000002C 662D2C01                        sub ax,300
+    38 00000030 6689C2                          mov dx,ax
+    39                                          ;calculam 200-[3*(c+b-d/a)-300]
+    40 00000033 66B8C800                        mov ax,200
+    41 00000037 6629D0                          sub ax,dx
+    42                                          ; exit(0)
+    43 0000003A 6A00                            push    dword 0      ; push the parameter for exit onto the stack
+    44 0000003C FF15[00000000]                  call    [exit]       ; call exit to terminate the program

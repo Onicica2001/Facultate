@@ -1,0 +1,37 @@
+     1                                  ;Scrieți un program în limbaj de asamblare care să rezolve expresia aritmetică, considerând domeniile de definiție ale variabilelor
+     2                                  ;a,b,c,d - word
+     3                                  ;(d-c)+(b+b-c-a)+d
+     4                                  bits 32 ; assembling for the 32 bits architecture
+     5                                  
+     6                                  ; declare the EntryPoint (a label defining the very first instruction of the program)
+     7                                  global start        
+     8                                  
+     9                                  ; declare external functions needed by our program
+    10                                  extern exit               ; tell nasm that exit exists even if we won't be defining it
+    11                                  import exit msvcrt.dll    ; exit is a function that ends the calling process. It is defined in msvcrt.dll
+    12                                                            ; msvcrt.dll contains exit, printf and all the other important C-runtime specific functions
+    13                                  
+    14                                  ; our data is declared here (the variables needed by our program)
+    15                                  segment data use32 class=data
+    16                                      ; 
+    17 00000000 0200                        a dw 2
+    18 00000002 0500                        b dw 5
+    19 00000004 0600                        c dw 6
+    20 00000006 0700                        d dw 7
+    21                                  
+    22                                  ; our code starts here
+    23                                  segment code use32 class=code
+    24                                      start:
+    25                                          ;
+    26 00000000 66A1[06000000]                   mov AX,[d]; AX=d
+    27 00000006 662B05[04000000]                 sub AX,[c]; AX=AX-c=d-c
+    28 0000000D 668B1D[02000000]                 mov BX,[b]; BX=b
+    29 00000014 66031D[02000000]                 add BX,[b]; BX=BX+b=b+b
+    30 0000001B 662B1D[04000000]                 sub BX,[c]; BX=BX-c=b+b-c
+    31 00000022 662B1D[00000000]                 sub BX,[a]; BX=BX-a=b+b-c+a
+    32 00000029 6601D8                           add AX,BX ; AX=AX+BX=(d-c)+(b+b-c+a)
+    33 0000002C 660305[06000000]                 add AX,[d]; AX=AX+d=(d-c)+(b+b-c-a)+d
+    34                                      
+    35                                          ; exit(0)
+    36 00000033 6A00                            push    dword 0      ; push the parameter for exit onto the stack
+    37 00000035 FF15[00000000]                  call    [exit]       ; call exit to terminate the program

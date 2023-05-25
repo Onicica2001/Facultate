@@ -1,0 +1,39 @@
+     1                                  bits 32 
+     2                                  
+     3                                  global start 
+     4                                         
+     5                                  extern exit            
+     6                                  import exit msvcrt.dll    
+     7                                  
+     8                                  extern convert_caracter               
+     9                                  
+    10                                  segment data use32 class=data
+    11 00000000 313031303031313162-         s db '10100111b', '01100011b', '00000110b', '00101011b'
+    11 00000009 303131303030313162-
+    11 00000012 303030303031313062-
+    11 0000001B 303031303130313162 
+    12                                      len_s equ $-s
+    13 00000024 FF<rept>                    d times 200 db -1
+    14                                      
+    15                                  segment code use32 class=code
+    16                                      start:
+    17                                          
+    18 00000000 B924000000                      mov ecx , len_s
+    19 00000005 BE[00000000]                    mov esi , s 
+    20 0000000A BF[24000000]                    mov edi , d 
+    21                                          
+    22                                          repeta:
+    23 0000000F AC                              lodsb ; se incarca caracter cu caracter valorile din sirul s declarat in segmentul de date 
+    24 00000010 88C3                            mov bl , al ; salvam in bl o copie a valorii curente din sir pentru a o compara cu valoarea obtinuta in urma conversiei ====> pentru a ne da seama daca caract este '0' sau '1'
+    25 00000012 E8(00000000)                    call convert_caracter
+    26                                          
+    27 00000017 38D8                            cmp al , bl ; se verifica daca a avut loc o conversie a unei caracter '0' sau '1'
+    28 00000019 7401                            je notzerounu
+    29 0000001B AA                              stosb 
+    30                                          
+    31                                          notzerounu:
+    32                                          
+    33 0000001C E2F1                            loop repeta
+    34                                          
+    35 0000001E 6A00                            push    dword 0      
+    36 00000020 FF15[00000000]                  call    [exit]       

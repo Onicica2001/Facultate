@@ -1,0 +1,83 @@
+     1                                  bits 32 ; assembling for the 32 bits architecture
+     2                                  
+     3                                  ; declare the EntryPoint (a label defining the very first instruction of the program)
+     4                                  global start        
+     5                                  
+     6                                  ; declare external functions needed by our program
+     7                                  extern exit               ; tell nasm that exit exists even if we won't be defining it
+     8                                  import exit msvcrt.dll    ; exit is a function that ends the calling process. It is defined in msvcrt.dll
+     9                                                            ; msvcrt.dll contains exit, printf and all the other important C-runtime specific functions
+    10                                  
+    11                                  segment data use32 class=data
+    12 00000000 6162626769696C7A7A              s1 db "abbgiilzz"
+    13                                          l1 equ $-s1
+    14 00000009 616262626363646467-             s2 db "abbbccddghhvvxy"
+    14 00000012 686876767879       
+    15                                          l2 equ $-s2
+    16 00000018 00<rept>                        s3 times l1+l2 db 0 
+    17                                  
+    18                                  ; 16. Se dau doua siruri de caractere ordonate alfabetic s1 si s2. Sa se construiasca prin interclasare sirul ordonat s3 care sa contina toate elementele din s1 si s2.
+    19                                  segment code use32 class=code
+    20                                      start:
+    21                                          
+    22 00000000 B900000000                      mov ecx , 0 ; vom retine in ecx cate elemente am luat din s1
+    23 00000005 BA00000000                      mov edx , 0 ; vom retine in edx cate elemente am luat din s2
+    24 0000000A BE[00000000]                    mov esi , s1 ; ESI = offset sir sursa s1  
+    25 0000000F BF[18000000]                    mov edi , s3 ; EDI = offset sir destinatie s3
+    26                                          
+    27 00000014 FC                              cld ; directia de parcurgere va fi de la stanga spre dreapta deoarece sirurile sunt ordonate crescator
+    28                                          
+    29                                          repeta_interclasare: ; folosim un loop cu un numar necounoscut de pasi
+    30                                          
+    31 00000015 83F909                              cmp ecx , l1
+    32 00000018 741B                                je exit_loop ; se efectueaza iesirea din interclasare daca am ajuns cu parcurgerea la finalul primului sir s1 
+    33                                              
+    34 0000001A 83FA0F                              cmp edx , l2
+    35 0000001D 7416                                je exit_loop ; se efectueaza iesirea din interclasare daca am ajuns cu parcurgerea la finalul celui de-al doilea sir s2
+    36                                          
+    37 0000001F AC                                  lodsb  
+    38 00000020 8A9A[09000000]                      mov bl , [s2+edx] ; al = valoarea de la offsetul curent din s1 + inc ESI si bl = valoarea de la adresa s2+edx 
+    39                                              
+    40 00000026 38D8                                cmp al , bl
+    41 00000028 7E07                                jle lesser ; se compara lexicografic cele doua caractere extrase
+    42                                              
+    43 0000002A 88D8                                mov al , bl ; mutam valoarea mai mica lexicografic in registrul al pentru a folosi stosb
+    44 0000002C AA                                  stosb ; se adauga in s3 , la offsetul curent , valoarea registrului al in urma compararii + inc EDI
+    45 0000002D 42                                  inc edx 
+    46 0000002E 4E                                  dec esi ; are loc decrementarea registrului ESI deoarece s-a preluat o valoare din sirul s2 , iar valoarea curenta din s1 trebuie comparata cu viitoarele elemente din s2
+    47 0000002F EBE4                                jmp repeta_interclasare
+    48                                              
+    49                                              lesser:
+    50 00000031 AA                                      stosb ; se adauga in s3 , la offsetul curent , valoarea registrului al in urma compararii + inc EDI 
+    51 00000032 41                                      inc ecx  
+    52 00000033 EBE0                                    jmp repeta_interclasare
+    53                                         
+    54                                         exit_loop:
+    55                                         
+    56 00000035 83FA0F                         cmp edx , l2 ; 
+    57 00000038 740F                           je parcurgere_sir1 ; decidem in care sir au mai ramas elemente de adaugat
+    58                                         
+    59                                         parcurgere_sir2: ; se parcurg elementele ramase in s2
+    60                                         
+    61 0000003A 83FA0F                         cmp edx , l2
+    62 0000003D 7419                           je end_program ; in cazul in care am luat din s2 toate elementele ramase,iesim din block-ul de cod curent direct la exit
+    63                                         
+    64 0000003F 8A82[09000000]                 mov al , [s2+edx] ; se adauga in AL valoarea urmatoare din sirul s2
+    65 00000045 AA                             stosb ; se adauga in s3 , la offsetul urmator , valoarea din AL
+    66 00000046 42                             inc edx 
+    67 00000047 EBF1                           jmp parcurgere_sir2 ; loop cu nr necounoscut de pasi
+    68                                         
+    69                                         parcurgere_sir1:  ; se parcurg elementele ramase in s1
+    70                                         
+    71 00000049 83F909                         cmp ecx , l1 
+    72 0000004C 740A                           je end_program ; in cazul in care am luat din s1 toate elementele ramase,iesim din block-ul de cod curent direct la exit
+    73                                         
+    74 0000004E 8A81[00000000]                 mov al , [s1+ecx] ; se adauga in AL valoarea urmatoare din sirul s1
+    75 00000054 AA                             stosb ; se adauga in s3 , la offsetul urmator , valoarea din AL
+    76 00000055 41                             inc ecx 
+    77 00000056 EBF1                           jmp parcurgere_sir1   ; loop cu nr necounoscut de pasi  
+    78                                         
+    79                                         end_program:
+    80                                          
+    81 00000058 6A00                            push    dword 0      ; push the parameter for exit onto the stack
+    82 0000005A FF15[00000000]                  call    [exit]       ; call exit to terminate the program

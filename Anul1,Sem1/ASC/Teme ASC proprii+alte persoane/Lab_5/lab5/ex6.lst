@@ -1,0 +1,60 @@
+     1                                  bits 32 ; assembling for the 32 bits architecture
+     2                                  
+     3                                  ; declare the EntryPoint (a label defining the very first instruction of the program)
+     4                                  global start        
+     5                                  
+     6                                  ; declare external functions needed by our program
+     7                                  extern exit               ; tell nasm that exit exists even if we won't be defining it
+     8                                  import exit msvcrt.dll    ; exit is a function that ends the calling process. It is defined in msvcrt.dll
+     9                                                            ; msvcrt.dll contains exit, printf and all the other important C-runtime specific functions
+    10                                  
+    11                                  
+    12                                  
+    13                                  ; Se da un sir de octeti S
+    14                                  segment data use32 class=data
+    15 00000000 0102030405060708            S db 1,2,3,4,5,6,7,8
+    16                                      len equ $-S
+    17 00000008 00<rept>                    D times len db 0
+    18                                      ; D: 1, 3, 5, 7, 2, 4, 6, 8
+    19                                  ; Sa se construiasca sirul D astfel: sa se puna mai intai elementele de pe pozitiile pare din S iar apoi elementele de pe pozitiile impare din S
+    20                                  segment code use32 class=code
+    21                                      start:
+    22                                      
+    23 00000000 BE00000000                       mov esi,0   ; i=0
+    24 00000005 BF00000000                       mov edi,0   ; j=0
+    25                                           
+    26                                           ;Vrem sa vedem daca S are un numar par de elemente sau un numar impar
+    27 0000000A 66B80800                         mov ax,len
+    28 0000000E 66BA0000                         mov dx,0 ; DX:AX=len
+    29 00000012 66BB0200                         mov bx,2 
+    30 00000016 66F7F3                           div bx  ;DX:AX/BX= AX, DX:AX%BX =DX
+    31 00000019 6683FA00                         cmp dx,0
+    32 0000001D 7407                             jz LenPar
+    33 0000001F B905000000                       mov ecx,len/2+1
+    34 00000024 EB05                             jmp Incepem
+    35                                           
+    36                                           LenPar:
+    37 00000026 B904000000                       mov ecx,len/2
+    38                                           
+    39                                           Incepem:
+    40 0000002B E32E                             jecxz Final
+    41 0000002D 8A86[00000000]                   mov al,[S+esi]
+    42 00000033 8887[08000000]                   mov [D+edi],al
+    43 00000039 83C602                           add esi,2
+    44 0000003C 47                               inc edi
+    45 0000003D E2EC                             loop Incepem
+    46                                           
+    47 0000003F B904000000                       mov ecx,len/2
+    48 00000044 BE01000000                       mov esi,1
+    49                                           
+    50                                           Incepem2:
+    51 00000049 8A86[00000000]                   mov al,[S+esi]
+    52 0000004F 8887[08000000]                   mov [D+edi],al
+    53 00000055 47                               inc edi
+    54 00000056 83C602                           add esi,2
+    55 00000059 E2EE                             loop Incepem2
+    56                                  
+    57                                           Final:
+    58                                          ; exit(0)
+    59 0000005B 6A00                            push    dword 0      ; push the parameter for exit onto the stack
+    60 0000005D FF15[00000000]                  call    [exit]       ; call exit to terminate the program

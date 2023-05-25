@@ -1,0 +1,61 @@
+     1                                  bits 32 ; assembling for the 32 bits architecture
+     2                                  
+     3                                  ; declare the EntryPoint (a label defining the very first instruction of the program)
+     4                                  global start        
+     5                                  
+     6                                  ; declare external functions needed by our program
+     7                                  extern exit               ; tell nasm that exit exists even if we won't be defining it
+     8                                  import exit msvcrt.dll    ; exit is a function that ends the calling process. It is defined in msvcrt.dll
+     9                                                            ; msvcrt.dll contains exit, printf and all the other important C-runtime specific functions
+    10                                  
+    11                                  ; s1 - sir octeti , s2 - sir octeti , d - sir octeti 
+    12                                  segment data use32 class=data
+    13 00000000 F102DF0AFE439C3158-         s1 db -15 , 2 , -33 , 10 , -2 , 67 , -100 , 49 , 88 , 22 
+    13 00000009 16                 
+    14                                      l equ $-s1 
+    15 0000000A 0405F606F8135A0FE3-         s2 db 4 , 5 , -10 , 6 , -8 , 19 , 90 , 15 , -29 , 0 
+    15 00000013 00                 
+    16 00000014 00<rept>                    d times l db 0 
+    17 0000001E <res 00000004>              a resd 1 
+    18                                  
+    19                                  ;Se dau doua siruri de octeti S1 si S2 de aceeasi lungime. Sa se construiasca sirul D astfel: fiecare element de pe pozitiile pare din D este suma elementelor de pe pozitiile corespunzatoare din S1 si S2, iar fiecar
+    20                                  segment code use32 class=code
+    21                                      start:
+    22                                          
+    23 00000000 B90A000000                      mov ecx , l ; punem lungimea celor doua siruri in ecx pentru a realiza bucla loop de l ori 
+    24 00000005 BE00000000                      mov esi , 0 ; indexare pozitie de inceput 
+    25 0000000A E34E                            jecxz Sfarsit ; programul trece la exit daca lungimea sirurilor este nula
+    26                                          
+    27                                          Repeta:
+    28 0000000C 8935[1E000000]                          mov [a] , esi 
+    29 00000012 66A1[1E000000]                          mov ax , word [a]
+    30 00000018 668B15[20000000]                        mov dx , word [a+2]
+    31                                                  ;dx:ax = a = esi ; indexul unde am ajuns cu parcurgerea 
+    32 0000001F 66BB0200                                mov bx , 2 
+    33 00000023 66F7F3                                  div bx ; se realizeaza impartirea indexului la care am ajuns si 2 pentru a determina natura pasului in care ne aflam
+    34                                                  ; dx = a%2
+    35                                                  
+    36 00000026 6683FA01                                cmp dx , 1 ; se compara restul impartirii indexului la 2 pentru a afla paritatea pasului 
+    37 0000002A 7417                                    je Impar ; se sare la Eticheta1 in cazul in care restul este 1(ne aflam la index impar)
+    38                                                  
+    39 0000002C 8A86[00000000]                          mov al , [s1+esi]
+    40 00000032 8A9E[0A000000]                          mov bl , [s2+esi]
+    41                                                  ; se copiaza in cei doi registri al si bl , valorile din s1 si s2 corespunzatoare indexului curent
+    42 00000038 00D8                                    add al , bl 
+    43 0000003A 8886[14000000]                          mov [d+esi] , al ; se copiaza in noul sir format , valoarea calculata pe pozitia indexului curent
+    44 00000040 46                                      inc esi ; incrementare index curent 
+    45 00000041 E2C9                                    loop Repeta
+    46                                                  
+    47                                                  Impar: ; parte de cod corespunzatoare cazului cand indexul la care am ajuns este impar
+    48 00000043 8A86[00000000]                              mov al , [s1+esi]  
+    49 00000049 8A9E[0A000000]                              mov bl , [s2+esi]
+    50                                                      ;se copiaza in cei doi registri al si bl , valorile din s1 si s2 corespunzatoare indexului curent
+    51 0000004F 28D8                                        sub al , bl 
+    52 00000051 8886[14000000]                              mov [d+esi] , al ; se copiaza in noul sir format , valoarea calculata pe pozitia indexului curent
+    53 00000057 46                                          inc esi ; incrementare index curent 
+    54 00000058 E2B2                                        loop Repeta               
+    55                                          
+    56                                          Sfarsit:
+    57                                          
+    58 0000005A 6A00                            push    dword 0      ; push the parameter for exit onto the stack
+    59 0000005C FF15[00000000]                  call    [exit]       ; call exit to terminate the program

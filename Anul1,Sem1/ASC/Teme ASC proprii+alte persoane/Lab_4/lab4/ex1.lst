@@ -1,0 +1,60 @@
+     1                                  bits 32 ; assembling for the 32 bits architecture
+     2                                  
+     3                                  ; declare the EntryPoint (a label defining the very first instruction of the program)
+     4                                  global start        
+     5                                  
+     6                                  ; declare external functions needed by our program
+     7                                  extern exit               ; tell nasm that exit exists even if we won't be defining it
+     8                                  import exit msvcrt.dll    ; exit is a function that ends the calling process. It is defined in msvcrt.dll
+     9                                                            ; msvcrt.dll contains exit, printf and all the other important C-runtime specific functions
+    10                                  
+    11                                  ; our data is declared here (the variables needed by our program)
+    12                                  segment data use32 class=data
+    13 00000000 FFEEDDCCBBAA0000            a dq 0AABBCCDDEEFFh
+    14 00000008 00                          n db 0
+    15 00000009 0000                        b dw 0
+    16 0000000B 00000000                    c dd 0
+    17                                  
+    18                                  ; Se da quadwordul A
+    19                                  ; Sa se obtina numarul intreg N reprezentat de bitii 17-19 ai lui A
+    20                                  ; Sa se obtina apoi in B dublucuvantul rezultat prin rotirea spre stanga a dublucuvantului superior al lui A cu N pozitii. 
+    21                                  ;Sa se obtina octetul C astfel:
+    22                                  ;bitii 0-2 ai lui C sunt bitii 9-11 ai lui B
+    23                                  ;bitii 3-7 ai lui C sunt bitii 20-24 ai lui B
+    24                                  segment code use32 class=code
+    25                                      start:
+    26                                          ; Sa se obtina numarul intreg N reprezentat de bitii 17-19 ai lui A
+    27 00000000 A1[00000000]                    mov eax , dword[a]
+    28 00000005 2500000E00                      and eax, 00000000000011100000000000000000b
+    29 0000000A B111                            mov cl,17
+    30 0000000C D3C8                            ror eax,cl
+    31 0000000E A3[08000000]                    mov [n], eax
+    32                                          
+    33                                          
+    34                                          ; Sa se obtina apoi in B dublucuvantul rezultat prin rotirea spre stanga a dublucuvantului superior al lui A cu N pozitii
+    35 00000013 A1[00000000]                    mov eax, dword[a]
+    36 00000018 8A0D[08000000]                  mov cl,[n]
+    37 0000001E D3C0                            rol eax, cl
+    38 00000020 A3[09000000]                    mov [b], eax
+    39                                          
+    40 00000025 BB00000000                      mov ebx,0
+    41                                          ;bitii 0-2 ai lui C sunt bitii 9-11 ai lui B
+    42 0000002A A1[09000000]                    mov eax, [b]
+    43 0000002F 25000E0000                      and eax,00000000000000000000111000000000b
+    44 00000034 B109                            mov cl,9
+    45 00000036 D3C8                            ror eax, cl
+    46 00000038 09C3                            or ebx,eax
+    47                                          
+    48                                          ;bitii 3-7 ai lui C sunt bitii 20-24 ai lui B
+    49 0000003A A1[09000000]                    mov eax,[b]
+    50 0000003F 250000F001                      and eax,00000001111100000000000000000000b
+    51 00000044 B111                            mov cl, 17
+    52 00000046 C1C811                          ror eax, 17
+    53 00000049 09C3                            or ebx, eax
+    54                                          
+    55 0000004B 891D[0B000000]                  mov [c],ebx
+    56                                  
+    57                                          
+    58                                          ; exit(0)
+    59 00000051 6A00                            push    dword 0      ; push the parameter for exit onto the stack
+    60 00000053 FF15[00000000]                  call    [exit]       ; call exit to terminate the program

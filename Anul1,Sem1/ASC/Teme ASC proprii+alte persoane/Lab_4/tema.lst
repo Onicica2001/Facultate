@@ -1,0 +1,91 @@
+     1                                  bits 32 ; assembling for the 32 bits architecture
+     2                                  
+     3                                  ; declare the EntryPoint (a label defining the very first instruction of the program)
+     4                                  global start        
+     5                                  
+     6                                  ; declare external functions needed by our program
+     7                                  extern exit               ; tell nasm that exit exists even if we won't be defining it
+     8                                  import exit msvcrt.dll    ; exit is a function that ends the calling process. It is defined in msvcrt.dll
+     9                                                            ; msvcrt.dll contains exit, printf and all the other important C-runtime specific functions
+    10                                  
+    11                                  ; a - dword , b - dword , c - qword 
+    12                                  segment data use32 class=data
+    13 00000000 F6C4FC93                    a dd 10010011111111001100010011110110b
+    14 00000004 801555BF                    b dd 10111111010101010001010110000000b
+    15 00000008 <res 00000008>              c resq 1 
+    16                                  
+    17                                  ; bitii 0-7 ai lui C sunt bitii 21-28 ai lui A
+    18                                  ; bitii 8-15 ai lui C sunt bitii 23-30 ai lui B complementati
+    19                                  ; bitii 16-21 ai lui C sunt 101010
+    20                                  ; bitii 22-31 ai lui C au valoarea 0
+    21                                  ; bitii 32-42(0-10) ai lui C sunt bitii 21-31 ai lui B
+    22                                  ; bitii 43-55(11-23) ai lui C sunt bitii 1-13 ai lui A
+    23                                  ; bitii 56-63(24-31) ai lui C sunt bitii 24-31 ai rezultatului A XOR 0ABh
+    24                                  segment code use32 class=code
+    25                                      start:
+    26                                          
+    27 00000000 BB00000000                      mov ebx , 0 ; vom calcula bitii 0-31 a lui c in ebx 
+    28                                          
+    29                                          
+    30                                          ; bitii 0-7 ai lui C sunt bitii 21-28 ai lui A
+    31 00000005 A1[00000000]                    mov eax , dword [a] ; izolam bitii 21-28 a lui a 
+    32 0000000A 250000E01F                      and eax , 00011111111000000000000000000000b
+    33 0000000F C1C815                          ror eax , 21 ; rotim bitii 21 de pozitii spre dreapta eax = 00000000000000000000000011111111b
+    34 00000012 09C3                            or ebx , eax ; punem bitii in rezultat
+    35                                          
+    36 00000014 31C0                            xor eax , eax; eax = 0 
+    37                                          
+    38                                          ; bitii 8-15 ai lui C sunt bitii 23-30 ai lui B complementati
+    39 00000016 A1[04000000]                    mov eax , dword[b] 
+    40 0000001B F7D0                            not eax ; inversam valorile bitilor din eax 
+    41 0000001D 250000807F                      and eax , 01111111100000000000000000000000b ; izolam bitii 23-30 a lui b 
+    42 00000022 C1C80F                          ror eax , 15 ; rotim bitii 15 pozitii spre dreapta eax = 00000000000000001111111100000000b
+    43 00000025 09C3                            or ebx , eax ;punem bitii in rezultat
+    44                                          
+    45 00000027 31C0                            xor eax , eax ; eax = 0
+    46                                          
+    47                                          ; bitii 16-21 ai lui C sunt 101010
+    48 00000029 81CB00002A00                    or ebx , 00000000001010100000000000000000b ; mutam pe pozitiile 16-21 in ebx bitii 101010
+    49                                          
+    50                                          ; bitii 22-31 ai lui C au valoarea 0
+    51 0000002F 81E3FFFF3F00                    and ebx , 00000000001111111111111111111111b ; facem bitii 21-31 in ebx sa fie 0 
+    52                                          
+    53                                          ;in acest moment, in ebx avem partea mai putin semnificativa a qword-ului c 
+    54                                          
+    55 00000035 B900000000                      mov ecx , 0 ; vom calcula bitii 32-63 a lui c in ecx 
+    56                                          
+    57                                          ; bitii 32-42 ai lui C sunt bitii 21-31 ai lui B
+    58 0000003A 8B15[04000000]                  mov edx , dword [b]
+    59 00000040 81E20000E0FF                    and edx , 11111111111000000000000000000000b ; izolam bitii 21-31 a lui b 
+    60 00000046 C1CA15                          ror edx , 21 ; rotim bitii lui ecx 21 de pozitii spre dreapta ecx = 00000000000000000000011111111111b
+    61 00000049 09D1                            or ecx , edx ; punem bitii in rezultat 
+    62                                           
+    63 0000004B 31D2                            xor edx , edx ; zerorizam edx
+    64                                          
+    65                                          ; bitii 43-55(11-23) ai lui C sunt bitii 1-13 ai lui A
+    66 0000004D 8B15[00000000]                  mov edx , dword [a]
+    67 00000053 81E2FE3F0000                    and edx , 00000000000000000011111111111110b ; izolam bitii 1-13 a lui a 
+    68 00000059 C1C20A                          rol edx , 10 ; rotim 10 pozitii bitii aflati in edx 
+    69 0000005C 09D1                            or ecx , edx ; punem bitii in rezultat 
+    70                                          
+    71 0000005E 31D2                            xor edx , edx ; zerorizam edx 
+    72                                          
+    73                                          ; bitii 56-63(24-31) ai lui C sunt bitii 24-31 ai rezultatului A XOR 0ABh
+    74                                          
+    75 00000060 8B15[00000000]                  mov edx , dword [a]
+    76 00000066 B8AB000000                      mov eax , 0ABh 
+    77 0000006B 31C2                            xor edx , eax ; se realizeaza operatia xor intre edx(a) si eax(0ABh) si rezultatul se stocheaza in edx 
+    78                                          
+    79 0000006D 81E2000000FF                    and edx , 11111111000000000000000000000000b ; izolam bitii 24-31 a rezultatului din edx 
+    80 00000073 09D1                            or ecx , edx ; punem bitii in rezultat deoarece se aflau deja pe pozitiile bune in edx 
+    81                                          
+    82                                          ;in acest moment, in ecx avem partea mai semnificativa a qword-ului c
+    83                                          
+    84 00000075 891D[08000000]                  mov [c+0] , ebx 
+    85 0000007B 890D[0C000000]                  mov [c+4] , ecx 
+    86                                          ; c = ecx:ebx - rezultatul problemei
+    87                                          
+    88                                          
+    89                                          
+    90 00000081 6A00                            push    dword 0      ; push the parameter for exit onto the stack
+    91 00000083 FF15[00000000]                  call    [exit]       ; call exit to terminate the program

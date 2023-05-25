@@ -1,0 +1,80 @@
+     1                                  bits 32 
+     2                                  
+     3                                  
+     4                                  global start        
+     5                                  
+     6                                  
+     7                                  extern exit               
+     8                                  import exit msvcrt.dll    
+     9                                  
+    10                                  ;  a-word; b,c,d-byte; e-doubleword; x-qword Interpretare fara semn
+    11                                  segment data use32 class=data
+    12 00000000 FFFF                        a dw 0FFFFh 
+    13 00000002 A0                          b db 160
+    14 00000003 6D                          c db 109
+    15 00000004 3B                          d db 59
+    16 00000005 88130000                    e dd 5000
+    17 00000009 FEFFFF0000000000            x dq 0FFFFFEh
+    18                                  
+    19                                  ; (a*2+b/2+e)/(c-d)+x/a
+    20                                  segment code use32 class=code
+    21                                      start:
+    22                                          ;calculam x/a
+    23 00000000 66A1[00000000]                  mov ax,[a]          ;AX=a=FFFFh
+    24 00000006 66BA0000                        mov dx,0
+    25 0000000A 6652                            push dx
+    26 0000000C 6650                            push ax
+    27 0000000E 59                              pop ecx             ;ECX=DX:AX=FFFFh
+    28 0000000F A1[09000000]                    mov eax,dword[x]    ;EAX=FFFFFFh
+    29 00000014 8B15[0D000000]                  mov edx,dword[x+4]  ;EDX=0
+    30 0000001A F7F1                            div ecx             ;EAX=EDX:EAX/ECX=FFFFFFh/FFFFh=100h=256d
+    31 0000001C 89C1                            mov ecx,eax         ;ECX=EAX=100h=256d
+    32                                          
+    33                                          ;calculam a*2
+    34 0000001E 66A1[00000000]                  mov ax,[a]          ;AX=a=FFFFh
+    35 00000024 66BA0200                        mov dx,2            ;DX=2
+    36 00000028 66F7E2                          mul dx              ;DX:AX=AX*DX=FFFFh*2=1FFFEh
+    37 0000002B 6652                            push dx
+    38 0000002D 6650                            push ax
+    39 0000002F 5B                              pop ebx             ;EBX=1FFFEh
+    40                                          
+    41                                          ;calculam b/2
+    42 00000030 A0[02000000]                    mov al,[b]          ;AL=b=A0h=160d
+    43 00000035 B400                            mov ah,0            
+    44 00000037 B202                            mov dl,2
+    45 00000039 F6F2                            div byte dl         ;AL=AX/DL=50h=80d
+    46 0000003B B400                            mov ah,0
+    47 0000003D 66BA0000                        mov dx,0
+    48 00000041 6652                            push dx
+    49 00000043 6650                            push ax
+    50 00000045 58                              pop eax             ;EAX=50h=80d
+    51                                          
+    52                                          ;calculam a*2+b/2
+    53 00000046 01D8                            add eax,ebx         ;EAX=EAX+EBX=50h+1FFFEh=2004Eh=131150d
+    54                                          
+    55                                          ;calculam a*2+b/2+e
+    56 00000048 8B1D[05000000]                  mov ebx,[e]         ;EBX=e=1388h=5000d
+    57 0000004E 01D8                            add eax,ebx         ;EAX=EAX+EBX=2004Eh+1388h=213D6h=136150d
+    58                                          
+    59                                          ;calculam c-d
+    60 00000050 8A1D[03000000]                  mov bl,[c]          ;BL=c=6Dh=109d
+    61 00000056 8A15[04000000]                  mov dl,[d]          ;DL=d=3Bh=59d
+    62 0000005C 28D3                            sub bl,dl           ;BL=BL-DL=6Dh-3Bh=32h=50d
+    63                                          
+    64                                          ;calculam (a*2+b/2+e)/(c-d)
+    65 0000005E B700                            mov bh,0
+    66 00000060 50                              push eax            
+    67 00000061 6658                            pop ax
+    68 00000063 665A                            pop dx
+    69 00000065 66F7F3                          div word bx         ;AX=DX:AX/BX=213D6h/32h=AA3h=2723d
+    70                                          
+    71                                          ;calculam (a*2+b/2+e)/(c-d)+x/a
+    72 00000068 66BA0000                        mov dx,0
+    73 0000006C 6652                            push dx
+    74 0000006E 6650                            push ax
+    75 00000070 58                              pop eax
+    76 00000071 01C8                            add eax,ecx         ;EAX=EAX+ECX=AA3h+100h=BA3h=2979d
+    77                                      
+    78                                          ; exit(0)
+    79 00000073 6A00                            push    dword 0      ; push the parameter for exit onto the stack
+    80 00000075 FF15[00000000]                  call    [exit]       ; call exit to terminate the program

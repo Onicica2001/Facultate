@@ -1,0 +1,78 @@
+     1                                  bits 32 ; assembling for the 32 bits architecture
+     2                                  
+     3                                  ; declare the EntryPoint (a label defining the very first instruction of the program)
+     4                                  global start        
+     5                                  
+     6                                  ; declare external functions needed by our program
+     7                                  extern exit               ; tell nasm that exit exists even if we won't be defining it
+     8                                  import exit msvcrt.dll    ; exit is a function that ends the calling process. It is defined in msvcrt.dll
+     9                                                            ; msvcrt.dll contains exit, printf and all the other important C-runtime specific functions
+    10                                  
+    11                                  ; a - byte, b - word, c - double word, d - qword - Interpretare cu semn
+    12                                  segment data use32 class=data
+    13 00000000 14                          a db 20
+    14 00000001 1E00                        b dw 30
+    15 00000003 19000000                    c dd 25
+    16 00000007 0A00000000000000            d dq 10
+    17                                  
+    18                                  ; 2 .(c+b)-a-(d+d)
+    19                                  segment code use32 class=code
+    20                                      start:
+    21                                          
+    22 00000000 66A1[01000000]                  mov ax , [b]
+    23                                          
+    24                                          ;convertesc in interpretarea cu semn word-ul ax la dx:ax
+    25 00000006 6699                            cwd ; dx:ax = b 
+    26                                          
+    27 00000008 668B1D[03000000]                mov bx , word [c+0]
+    28 0000000F 668B0D[05000000]                mov cx , word [c+2]
+    29                                          ;cx:bx = c 
+    30                                          
+    31                                          ;calculez (c+b)
+    32                                          
+    33 00000016 6601C3                          add bx , ax 
+    34 00000019 6611D1                          adc cx , dx 
+    35                                          ;cx:bx = (c+b)
+    36                                          
+    37 0000001C A0[00000000]                    mov al , [a]
+    38                                          
+    39                                          ;convertesc in interpretarea cu semn byte-ul al la ax 
+    40 00000021 6698                            cbw ; ax = a 
+    41                                          
+    42                                          ;convertesc in interpretarea cu semn word-ul ax la dx:ax
+    43 00000023 6699                            cwd ; dx:ax = a 
+    44                                          
+    45                                          ;calculez (c+b)-a
+    46                                          
+    47 00000025 6629C3                          sub bx , ax 
+    48 00000028 6619D1                          sbb cx , dx 
+    49                                          ;cx:bx = calculez (c+b)-a
+    50                                          
+    51 0000002B 6689D8                          mov ax , bx 
+    52 0000002E 6689C2                          mov dx , ax 
+    53                                          ;dx:ax = (c+b)-a
+    54                                          
+    55 00000031 6652                            push dx  
+    56 00000033 6650                            push ax 
+    57 00000035 58                              pop eax 
+    58                                          ; eax = (c+b)-a
+    59                                          
+    60                                          ;convertesc in interpretarea cu semn eax in qword-ul edx:eax 
+    61 00000036 99                              cdq ; edx:eax = (c+b)-a
+    62                                          
+    63 00000037 8B1D[07000000]                  mov ebx , dword [d+0]
+    64 0000003D 8B0D[0B000000]                  mov ecx , dword [d+4]
+    65                                          ;ecx:ebx = d 
+    66                                          
+    67                                          ;calculez (d+d)
+    68 00000043 01DB                            add ebx , ebx 
+    69 00000045 11C9                            adc ecx , ecx ; ecx:ebx = (d+d)
+    70                                          
+    71                                          ;calculez (c+b)-a-(d+d)
+    72                                          
+    73 00000047 29D8                            sub eax , ebx 
+    74 00000049 19CA                            sbb edx , ecx 
+    75                                          ; edx:eax = (c+b)-a-(d+d)
+    76                                          
+    77 0000004B 6A00                            push    dword 0      ; push the parameter for exit onto the stack
+    78 0000004D FF15[00000000]                  call    [exit]       ; call exit to terminate the program

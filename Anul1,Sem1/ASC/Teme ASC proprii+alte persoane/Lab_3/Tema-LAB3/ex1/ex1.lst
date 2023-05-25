@@ -1,0 +1,77 @@
+     1                                  bits 32 ; assembling for the 32 bits architecture
+     2                                  
+     3                                  ; declare the EntryPoint (a label defining the very first instruction of the program)
+     4                                  global start        
+     5                                  
+     6                                  ; declare external functions needed by our program
+     7                                  extern exit               ; tell nasm that exit exists even if we won't be defining it
+     8                                  import exit msvcrt.dll    ; exit is a function that ends the calling process. It is defined in msvcrt.dll
+     9                                                            ; msvcrt.dll contains exit, printf and all the other important C-runtime specific functions
+    10                                  
+    11                                  ; a - byte, b - word, c - double word, d - qword - Interpretare fara semn
+    12                                  segment data use32 class=data
+    13 00000000 14                          a db 20
+    14 00000001 1E00                        b dw 30
+    15 00000003 19000000                    c dd 25
+    16 00000007 0A00000000000000            d dq 10
+    17 0000000F <res 00000002>              r resw 1 
+    18                                      
+    19                                  ; 2. (b+b)+(c-a)+d
+    20                                  segment code use32 class=code
+    21                                      start:
+    22                                          
+    23                                          ;calculez (b+b)
+    24 00000000 668B1D[01000000]                mov bx , [b]
+    25 00000007 66031D[01000000]                add bx , [b] ; bx = (b+b)
+    26 0000000E 66891D[0F000000]                mov [r] , bx ; r = bx salvez continutul lui bx in r 
+    27                                          
+    28 00000015 A0[00000000]                    mov al , [a]
+    29                                          
+    30                                          ;convertesc in interpretare fara semn byte-ul al la ax 
+    31 0000001A B400                            mov ah , 0 ; ax = a 
+    32                                          
+    33                                          ;convertesc in interpretare fara semn word-ul ax la dx:ax 
+    34 0000001C 66BA0000                        mov dx , 0 ; dx:ax = a 
+    35                                          
+    36 00000020 668B1D[03000000]                mov bx , word [c+0]
+    37 00000027 668B0D[05000000]                mov cx , word [c+2]
+    38                                          ;cx:bx = c 
+    39                                          
+    40                                          ;calculez (c-a)
+    41 0000002E 6629C3                          sub bx , ax 
+    42 00000031 6619D1                          sbb cx , dx 
+    43                                          ;cx:bx = (c-a)
+    44                                          
+    45 00000034 66A1[0F000000]                  mov ax , [r] ; ax = (b+b)
+    46                                          
+    47                                          ;convertesc in interpretare fara semn word-ul ax la dx:ax
+    48 0000003A 66BA0000                        mov dx , 0 ; dx:ax = (b+b)
+    49                                          
+    50                                          ;calculez (b+b)+(c-a)
+    51 0000003E 6601D8                          add ax , bx 
+    52 00000041 6611CA                          adc dx , cx 
+    53                                          ;dx:ax = (b+b)+(c-a)
+    54                                          
+    55 00000044 6652                            push dx 
+    56 00000046 6650                            push ax 
+    57 00000048 58                              pop eax 
+    58                                          ;eax = (b+b)+(c-a)
+    59                                          
+    60                                          ;convertesc eax in interpretare fara semn la qword edx:eax 
+    61                                          
+    62 00000049 BA00000000                      mov edx , 0
+    63                                          ;edx:eax = (b+b)+(c-a)
+    64                                          
+    65 0000004E 8B1D[07000000]                  mov ebx , dword [d+0]
+    66 00000054 8B0D[0B000000]                  mov ecx , dword [d+4]
+    67                                          ;ecx:ebx = d 
+    68                                          
+    69                                          ;calculez (b+b)+(c-a)+d
+    70 0000005A 01D8                            add eax , ebx 
+    71 0000005C 11CA                            adc edx , ecx
+    72                                          ;edx:eax = (b+b)+(c-a)+d
+    73                                         
+    74                                          
+    75                                          
+    76 0000005E 6A00                            push    dword 0      ; push the parameter for exit onto the stack
+    77 00000060 FF15[00000000]                  call    [exit]       ; call exit to terminate the program

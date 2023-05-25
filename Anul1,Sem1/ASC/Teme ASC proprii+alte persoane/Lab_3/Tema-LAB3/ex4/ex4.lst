@@ -1,0 +1,90 @@
+     1                                  bits 32 ; assembling for the 32 bits architecture
+     2                                  
+     3                                  ; declare the EntryPoint (a label defining the very first instruction of the program)
+     4                                  global start        
+     5                                  
+     6                                  ; declare external functions needed by our program
+     7                                  extern exit               ; tell nasm that exit exists even if we won't be defining it
+     8                                  import exit msvcrt.dll    ; exit is a function that ends the calling process. It is defined in msvcrt.dll
+     9                                                            ; msvcrt.dll contains exit, printf and all the other important C-runtime specific functions
+    10                                  
+    11                                  ; a,b,c-byte; d-doubleword; e-qword
+    12                                  segment data use32 class=data
+    13 00000000 03                          a db 3
+    14 00000001 04                          b db 4
+    15 00000002 02                          c db 2 
+    16 00000003 14000000                    d dd 20
+    17 00000007 3200000000000000            e dq 50
+    18                                  
+    19                                  ; 2. 2/(a+b*c-9)+e-d in interpretarea cu semn
+    20                                  segment code use32 class=code
+    21                                      start:
+    22                                          
+    23 00000000 A0[02000000]                    mov al , [c]
+    24 00000005 8A1D[01000000]                  mov bl , [b]
+    25                                          
+    26                                          ;calculez (b*c) 
+    27 0000000B F6EB                            imul bl ; ax = al * bl = (b*c)
+    28                                          
+    29 0000000D 6689C3                          mov bx , ax ; salvez continutul lui ax in bx pentru a putea realiza conversia lui a in registriul ax 
+    30                                          ; bx = ax = (b*c)
+    31 00000010 A0[00000000]                    mov al , [a]
+    32                                         
+    33                                          ;conversia in interpretarea cu semn a lui al in word 
+    34 00000015 6698                            cbw ; ax = a 
+    35                                          
+    36                                          ;calculez (a+b*c)
+    37 00000017 6601D8                          add ax , bx ; ax = ax + bx = (a+b*c)
+    38                                          
+    39                                          ;calculez (a+b*c-9)
+    40 0000001A 6683E809                        sub ax , 9 ; ax = ax - 9 = (a+b*c-9)
+    41                                          
+    42                                          ;salvez continutul lui ax in bx pentru a putea realiza impartirea in cadrul registrului ax
+    43 0000001E 6689C3                          mov bx , ax ; bx = ax = (a+b*c-9)
+    44                                          
+    45 00000021 66B80200                        mov ax , 2 
+    46                                          
+    47                                          ;conversia in interpretarea cu semn a lui ax in dword
+    48 00000025 6699                            cwd ; dx:ax = ax = 2 
+    49                                          
+    50                                          ;calculez 2/(a+b*c-9)
+    51 00000027 66F7FB                          idiv bx ; ax:dx / bx = ax (catul impartirii) si ax:dx % bx = dx(restul impartirii)
+    52                                          ;ax = 2/(a+b*c-9)
+    53                                          
+    54                                          ;conversia in interpretarea cu semn a lui ax in dword
+    55 0000002A 6699                            cwd ; dx:ax = ax = 2/(a+b*c-9)
+    56                                          
+    57 0000002C 6652                            push dx
+    58 0000002E 6650                            push ax 
+    59 00000030 58                              pop eax
+    60                                          ; eax = dx:ax = 2/(a+b*c-9)
+    61                                          
+    62                                          ;conversia in interpretarea cu semn a lui eax in qword
+    63 00000031 99                              cdq ; edx:eax = 2/(a+b*c-9)
+    64                                          
+    65 00000032 8B1D[07000000]                  mov ebx , dword [e+0]
+    66 00000038 8B0D[0B000000]                  mov ecx , dword [e+4]
+    67                                          ;ecx:ebx = e 
+    68                                          
+    69                                          ;calculez 2/(a+b*c-9)+e
+    70 0000003E 01D8                            add eax , ebx 
+    71 00000040 11CA                            adc edx , ecx 
+    72                                          ;edx:eax = 2/(a+b*c-9)+e
+    73                                          
+    74                                          ;salvez rezultatul curent in ecx:ebx pentru a elibera registrul eax unde au loc conversiile in interpretarea cu semn
+    75 00000042 89C3                            mov ebx , eax 
+    76 00000044 89D1                            mov ecx , edx  
+    77                                          ;ecx:ebx = 2/(a+b*c-9)+e
+    78                                          
+    79 00000046 A1[03000000]                    mov eax , [d]
+    80                                          
+    81                                          ;conversia in interpretarea cu semn a lui eax in qword
+    82 0000004B 99                              cdq ; edx:eax = d 
+    83                                          
+    84                                          ;calculez 2/(a+b*c-9)+e-d
+    85 0000004C 29C3                            sub ebx , eax 
+    86 0000004E 19D1                            sbb ecx , edx 
+    87                                          ;ebx:ecx = 2/(a+b*c-9)+e-d
+    88                                          
+    89 00000050 6A00                            push    dword 0      ; push the parameter for exit onto the stack
+    90 00000052 FF15[00000000]                  call    [exit]       ; call exit to terminate the program
